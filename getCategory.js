@@ -4,7 +4,10 @@ var fs = require('fs');
 var tools = require('./tools.js');
 var async = require('async')
 var _ = require('lodash');
-
+var writeFileName = '/data/catList.json';
+var url = 'http://www.alibaba.com/countrysearch/CN-China.html';
+var insertSql = 'INSERT INTO alibaba_company (name, url, gold_supplier, assurance, update_date, status, contact)'
+              + 'VALUES ($1, $2, $3, $4, $5, $6, $7);'
 async.auto({
   homeDate: [getHome],
   firstCat: ['homeDate', getFirstCat],
@@ -15,7 +18,6 @@ async.auto({
 })
 
 function getHome(cb, result) {
-	var url = 'http://www.alibaba.com/countrysearch/CN-China.html';
 	request(url, function (err, res, data) {
 		if (!err && res.statusCode == 200) {
 			cb(null, data);
@@ -67,22 +69,21 @@ function getSecondCat(cb, result) {
 								cat[key][catName][tools.convertHTMLEntity($('a', childItem).html())] = tools.getCIDtoURL($('a', childItem).attr('href'));
 							})
 						}
-						
+
 					});
-					callback();	
+					callback();
 				}
 			})
 		}, function(err) {
 			if (err) cb(err);
 			cb(null, cat)
-		}) 
+		})
 	}//req
 
 }
 
 function toUrlList (cb, result) {
 	console.log(result)
-	var writeFileName = 'catList.json';
 	if(result.secondCat) {
 		console.log(result.secondCat)
 		var secondCat = _.clone(result.secondCat);
@@ -94,7 +95,7 @@ function toUrlList (cb, result) {
 			if(!err) console.log(writeFileName, ' saved!');
 			cb(null, result)
 		})
-	}	
+	}
 }
 
 function catEach(obj) {

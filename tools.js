@@ -1,5 +1,6 @@
 var retry = require('retry');
 var request = require('request');
+var config = require('config.js');
 module.exports = {
 	convertHTMLEntity: function (str) {
 		str = str.replace( /\&amp;/g, '&' );
@@ -37,6 +38,19 @@ module.exports = {
 	      cb(err ? operation.mainError() : null, res, data);
 	    });
 	  });
-	
+	},
+	pgQuery: function (sql, parameters, callback) {
+		pg.connect(config.db, function(err, client, done) {
+			if(err) {
+				return console.error('err fetch', err);
+			}
+			client.query(sql , parameters, function(err, result) {
+				done();
+				if(err) {
+					return callback(err, result);
+				}
+					callback(null, result);
+			})
+		})
 	}
 }

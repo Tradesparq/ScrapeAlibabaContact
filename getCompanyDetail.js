@@ -9,8 +9,8 @@ var pg = require('pg');
 var conString = "postgres://postgres:123456@127.0.0.1:5432/alibaba";
 var moment = require('moment');
 // var readFileName = process.argv[2] || 'test.json';
-var readFileName = process.argv[2] || 'catList.json';
-var writeFileName = process.argv[3] || 'companyList.json';
+var readFileName = process.argv[2] || '/data/catList.json';
+// var writeFileName = process.argv[3] || 'companyList.json';
 var cat = [];
 var errurl = [];
 fs.readFile(readFileName, function (err, data) {
@@ -44,7 +44,7 @@ fs.readFile(readFileName, function (err, data) {
 	        	}, function (err, res, data) {
 	        		console.log("---------------------",url + '/' + count, moment().utc().format());
 	      			if (err || res.statusCode != 200) {
-	      				
+
 								console.log('>>>>>>>>>>>>>>>>>>>>>whileReqError', moment().utc().format(),err)
 								errurl.push(url)
 								cb(true)
@@ -99,46 +99,23 @@ fs.readFile(readFileName, function (err, data) {
 	      					cb();
 	      				})
 	      			}
-
-	    				
 	      		})
 			    },
 			    function (err) {
 		        callback()
 			    }
 				);
-				// console.log($('.main-wrap>div>div.f-icon.m-item').length)
-				// $('#J-items-content>div.f-icon.m-item').each( function(i, li) {
-				// 	console.log($('div.item-title .title.ellipsis>a',li).attr('href'));
-				// })
 			}
-			// console.log(data.toString())
-			// fs.writeFile('test.html', data.toString(), function(err){if(err) console.log(err)})
-			
-
 		})
 	}, function (err) {
 		if(err) console.log(err);
-		fs.writeFile('companyList.json', JSON.stringify(cat))
-		fs.writeFile('companyListERR.json', JSON.stringify(errurl))
 	})
-	
+
 })
-// 
-// request({
-// 		url: 'http://www.alibaba.com/catalogs/corporations/CID3411',
-// 		headers: {
-//     	'User-Agent': 'request'
-//   	}
-// 	}, function (err, res, data) {
-// 	console.log(data)
-// })
-// 
-// 
+
 function getEleAndPush(data, arr) {
 	$ = cheerio.load(data);
 	$('#J-items-content>div.f-icon.m-item').each( function(i, li) {
-		// arr.push($('div.item-title .title.ellipsis>a',li).attr('href'));
 		arr.push({
 			name: $('div.item-title .title.ellipsis>a',li).html(),
 			goldSupplier: $('.ico-year>span', li).length&&/\d+/.test($('.ico-year>span').attr('class'))?Number(/\d+/.exec($('.ico-year>span').attr('class'))[0]):undefined,
@@ -153,14 +130,8 @@ function getEleAndInsert(data) {
 	$ = cheerio.load(data);
 	var data = [];
 	$('#J-items-content>div.f-icon.m-item').each( function(i, li) {
-	// 	// arr.push($('div.item-title .title.ellipsis>a',li).attr('href'));
-	// 	arr.push({
-	// 		name: $('div.item-title .title.ellipsis>a',li).html(),
-	// 		goldSupplier: $('.ico-year>span', li).length&&/\d+/.test($('.ico-year>span').attr('class'))?Number(/\d+/.exec($('.ico-year>span').attr('class'))[0]):undefined,
-	// 		assurance: $('.ico-ta', li).length? true:false,
-	// 		href: tools.getContact($('div.item-title .title.ellipsis>a',li).attr('href'))
 		data.push([
-			tools.convertHTMLEntity($('div.item-title .title.ellipsis>a',li).html()), 
+			tools.convertHTMLEntity($('div.item-title .title.ellipsis>a',li).html()),
 			tools.getContact($('div.item-title .title.ellipsis>a',li).attr('href')),
 			$('.ico-year>span', li).length&&/\d+/.test($('.ico-year>span').attr('class'))?Number(/\d+/.exec($('.ico-year>span').attr('class'))[0]):0,
 			$('.ico-ta', li).length? true:false,
@@ -168,11 +139,4 @@ function getEleAndInsert(data) {
 			'suc']);
 	})
 	return data;
-
 }
-
-
-
-
-
-	
