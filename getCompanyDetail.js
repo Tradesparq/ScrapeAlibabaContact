@@ -9,10 +9,12 @@ var pg = require('pg');
 var conString = "postgres://postgres:123456@127.0.0.1:5432/alibaba";
 var moment = require('moment');
 // var readFileName = process.argv[2] || 'test.json';
-var readFileName = process.argv[2] || '/data/catList.json';
-// var writeFileName = process.argv[3] || 'companyList.json';
+var readFileName = process.argv[2] || './data/catList.json';
+var insertSql = 'INSERT INTO alibaba_company (name, sid, url, gold_supplier, assurance, update_date, status, contact) '
+              + 'VALUES ($1, $2, $3, $4, $5, $6, $7, $8);'
+var insertErrSql = 'INSERT INTO alibaba_company (name, sid, url, gold_supplier, assurance, update_date, status) '
+              + 'VALUES ($1, $2, $3, $4, $5, $6, $7);'
 var cat = [];
-var errurl = [];
 fs.readFile(readFileName, function (err, data) {
 	if(err) console.log(err)
 	var list = JSON.parse(data);
@@ -46,14 +48,23 @@ fs.readFile(readFileName, function (err, data) {
 	      			if (err || res.statusCode != 200) {
 
 								console.log('>>>>>>>>>>>>>>>>>>>>>whileReqError', moment().utc().format(),err)
-								errurl.push(url)
+								company.push(moment().utc().format('YYYY-MM-DD HH:mm:ss'));
+								company.push('err');
+								tools.pgQuery(insertErrSql, company, function (err, result) {
+									if(err) console.log(err);
+									else {
+										console.log(result);
+										each_cb();
+									}
+								});
 								cb(true)
 
 	      			} else {
 		    				var companys = getEleAndInsert(data);
+								console.log(companys);
 		    				async.each(companys, function(company,each_cb) {
 	      				request({
-	      					url: company[1],
+	      					url: company[2],
 	      					headers: {
 	      				  	'User-Agent': 'request'
 	      					}
@@ -67,30 +78,25 @@ fs.readFile(readFileName, function (err, data) {
 	      						$ = cheerio.load(data);
 	      						var contact = {
 	      							person: _s.clean($('div.contact-overview>div.contact-info>h1.name').text())
-	      						}
+	      						};
 	      						$('div.contact-overview>div.contact-info>dl>dt').each(function(i, dt) {
 	      							contact[$(dt).text().replace(':','')] = $(dt).next('dd').text();
-	      						})
+	      						});
 	      						$('div.contact-detail>dl>dt').each(function(i, dt) {
 	      							contact[$(dt).text().replace(':','')] = $(dt).next('dd').text();
-	      						})
-	      						$('table.company-info-data.table>tbody>tr').each(function(i, tr) {
-	      							contact[$('th', tr).text().replace(':','')] = $('td', tr).text();
-	      						})
-	      						company.push(JSON.stringify(contact))
-	      						pg.connect(conString, function(err, client, done) {
-	      							if(err) {
-	      								return console.error('err fetch', err);
-	      							}
-	      							client.query('INSERT INTO alibaba_company (name, url, gold_supplier, assurance, update_date, status, contact) VALUES ($1, $2, $3, $4, $5, $6, $7);' , company, function(err, result) {
-	      								done();
-	      								if(err) {
-	      									return console.error('error running query', err);
-	      								}
-	      								console.log(!!result.rows)
-	      								each_cb();
-	      							})
-	      						})
+	      						});
+										company.push(moment().utc().format('YYYY-MM-DD HH:mm:ss'));
+										company.push('suc');
+	      						company.push(JSON.stringify(contact));
+										tools.pgQuery(insertSql, company, function (err, result) {
+											if(err) console.log(err);
+											else {
+												console.log(result);
+												each_cb();
+											}
+										});
+										// console.log(company);
+										// each_cb();
 	      					}
 	      				})
 	      			}, function (err) {
@@ -113,18 +119,6 @@ fs.readFile(readFileName, function (err, data) {
 
 })
 
-function getEleAndPush(data, arr) {
-	$ = cheerio.load(data);
-	$('#J-items-content>div.f-icon.m-item').each( function(i, li) {
-		arr.push({
-			name: $('div.item-title .title.ellipsis>a',li).html(),
-			goldSupplier: $('.ico-year>span', li).length&&/\d+/.test($('.ico-year>span').attr('class'))?Number(/\d+/.exec($('.ico-year>span').attr('class'))[0]):undefined,
-			assurance: $('.ico-ta', li).length? true:undefined,
-			href: tools.getContact($('div.item-title .title.ellipsis>a',li).attr('href'))
-		})
-	})
-}
-
 function getEleAndInsert(data) {
 // function getEleAndInsert() {
 	$ = cheerio.load(data);
@@ -132,11 +126,11 @@ function getEleAndInsert(data) {
 	$('#J-items-content>div.f-icon.m-item').each( function(i, li) {
 		data.push([
 			tools.convertHTMLEntity($('div.item-title .title.ellipsis>a',li).html()),
+			Number($('h2.title.ellipsis>a', li).attr('data-hislog')),
 			tools.getContact($('div.item-title .title.ellipsis>a',li).attr('href')),
 			$('.ico-year>span', li).length&&/\d+/.test($('.ico-year>span').attr('class'))?Number(/\d+/.exec($('.ico-year>span').attr('class'))[0]):0,
-			$('.ico-ta', li).length? true:false,
-			moment().utc().format('YYYY-MM-DD HH:mm:ss'),
-			'suc']);
+			$('.ico-ta', li).length? true:false
+		]);
 	})
 	return data;
 }

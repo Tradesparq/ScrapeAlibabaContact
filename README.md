@@ -2,7 +2,7 @@
  Scrape Alibaba Supplier contact
 #### run postgres docker
 ```bash
-docker run -p 5432:5432 --restart=always --name alibaba -e POSTGRES_PASSWORD=123456 -d postgres:9.3 
+docker run -p 5432:5432 --restart=always --name alibaba -e POSTGRES_PASSWORD=123456 -d postgres:9.3
 ```
 
 #### create table
@@ -11,6 +11,7 @@ create table alibaba_company
 (
 id BIGSERIAL PRIMARY KEY,
 name character varying(255),
+sid bigint,
 url character varying(255),
 status character varying(255),
 gold_supplier bigint,
@@ -20,11 +21,11 @@ update_date timestamp
 )
 ```
 
-#### get category 
+#### get category
 ```bash
 node getCategory.js
 ```
-#### get company detail to local database 
+#### get company detail to local database
 ```bash
 node getCompanyList.js
 ```

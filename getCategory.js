@@ -4,10 +4,8 @@ var fs = require('fs');
 var tools = require('./tools.js');
 var async = require('async')
 var _ = require('lodash');
-var writeFileName = '/data/catList.json';
+var writeFileName = './data/catList.json';
 var url = 'http://www.alibaba.com/countrysearch/CN-China.html';
-var insertSql = 'INSERT INTO alibaba_company (name, url, gold_supplier, assurance, update_date, status, contact)'
-              + 'VALUES ($1, $2, $3, $4, $5, $6, $7);'
 async.auto({
   homeDate: [getHome],
   firstCat: ['homeDate', getFirstCat],
