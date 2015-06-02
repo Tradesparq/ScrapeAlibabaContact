@@ -8,3 +8,5 @@ client.on("error", function (err) {
   // TODO: comment this?
   throw new Error('Can not connect to redis.' + err);
 });
+
+module.exports = client;
