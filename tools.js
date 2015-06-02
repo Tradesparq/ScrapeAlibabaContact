@@ -1,18 +1,6 @@
 var retry = require('retry');
 var request = require('request');
 var config = require('./config.js');
-var pg = require('pg');
-var conString = config.db.dialect + '://' + config.db.user + ':' + config.db.pass + '@' + config.db.host + '/' + config.db.name;
-
-// db: {
-// 	host: '127.0.0.1',
-// 	name: 'alibaba',
-// 	user: 'postgres',
-// 	pass: '123456',
-// 	dialect: 'postgres',
-// 	port: 5432,
-// 	logging: true
-// }
 module.exports = {
 	convertHTMLEntity: function (str) {
 		str = str.replace( /\&amp;/g, '&' );
@@ -50,20 +38,5 @@ module.exports = {
 	      cb(err ? operation.mainError() : null, res, data);
 	    });
 	  });
-	},
-	pgQuery: function (sql, parameters, callback) {
-		pg.connect(conString, function(err, client, done) {
-			if(err) {
-				return console.error('err fetch', err);
-			}
-			client.query(sql , parameters, function(err, result) {
-				done();
-				if(err) {
-					callback(err, result);
-				} else {
-					callback(null, result);
-				}
-			})
-		})
 	}
 }

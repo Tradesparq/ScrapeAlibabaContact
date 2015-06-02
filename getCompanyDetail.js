@@ -5,22 +5,22 @@ var fs = require('fs');
 var tools = require('./tools.js');
 var _ = require('lodash');
 var _s = require('underscore.string');
-var pg = require('pg');
-var conString = "postgres://postgres:123456@127.0.0.1:5432/alibaba";
+var pg = require('./pg.js');
 var moment = require('moment');
 // var readFileName = process.argv[2] || 'test.json';
 var readFileName = process.argv[2] || './data/catList.json';
+var errFileName = process.argv[2] || './data/catListErr.json';
 var insertSql = 'INSERT INTO alibaba_company (name, sid, url, gold_supplier, assurance, update_date, status, contact) '
               + 'VALUES ($1, $2, $3, $4, $5, $6, $7, $8);'
 var insertErrSql = 'INSERT INTO alibaba_company (name, sid, url, gold_supplier, assurance, update_date, status) '
               + 'VALUES ($1, $2, $3, $4, $5, $6, $7);'
 var checkSidSql = 'SELECT id, name, sid, url FROM alibaba_company WHERE sid = $1';
-var cat = [];
+var errList = [];
 fs.readFile(readFileName, function (err, data) {
-	if(err) console.log(err)
+	if(err) console.log(err);
 	var list = JSON.parse(data);
 	async.eachSeries(list, function(url, callback) {
-		console.log("+++++++++++++++++++++",url, moment().utc().format())
+		console.log("+++++++++++++++++++++",url, moment().utc().format());
 		request({
 			url: url,
 			headers: {
@@ -28,101 +28,68 @@ fs.readFile(readFileName, function (err, data) {
 			}
   	}, function (err, res, data) {
 			if (err || res.statusCode != 200) {
-				console.log('eachReqError',err)
-				errurl.push(url)
-				callback()
+				console.log('eachReqError',err);
+        errList.push(url);
+				callback();
 			} else {
 				$ = cheerio.load(data);
-				times = $('a.next').prev().html()||1;
+				times = $('a.next').prev().html() || 1;
 				var count = 0;
 				async.whilst(
 			    function () { return count < times; },
-			    function (cb) {
+			    function (cbEachPage) {
 		        count++;
 	      		request({
 	      			url: url + '/' + count,
 	      			headers: {
 	      	    	'User-Agent': 'request'
 	      			}
-	        	}, function (err, res, data) {
-	        		console.log("---------------------",url + '/' + count, moment().utc().format());
-	      			if (err || res.statusCode != 200) {
-                console.log('>>>>>>>>>>>>>>>>>>>>>whileReqError', moment().utc().format(),err)
-                console.log(err|| res.statusCode);
-                count--;
-                cb();
-	      			}
-              else {
-                async.filter(getEleAndInsert(data), checkNotCompanyExist, function(companys) {
-                  async.each(companys, function(company, each_cb) {
-    	      				request(
-                      {
-    	      					url: company[2],
-    	      					headers: {
-    	      				  	'User-Agent': 'request'
-    	      					}
-    	      				},
-                    function (err, res, data) {
-    	      					console.log("=====================",company[1], moment().utc().format());
-    	      					if (err || res.statusCode != 200) {
-    	      						console.log('>>>>>>>>>>>>>>>>>>>>>detailReqError', company[1], moment().utc().format(),err)
-                        company.push(moment().utc().format('YYYY-MM-DD HH:mm:ss'));
-        								company.push('err');
-        								tools.pgQuery(insertErrSql, company, function (err, result) {
-        									if(err) console.log(err);
-        									else {
-        										console.log('inserted;');
-        										each_cb();
-        									}
-        								});
-    	      					}
-                      else {
-    	      						var $ = cheerio.load(data);
-    	      						var contact = {
-    	      							person: _s.clean($('div.contact-overview>div.contact-info>h1.name').text())
-    	      						};
-    	      						$('div.contact-overview>div.contact-info>dl>dt').each(function(i, dt) {
-    	      							contact[$(dt).text().replace(':','')] = $(dt).next('dd').text();
-    	      						});
-    	      						$('div.contact-detail>dl>dt').each(function(i, dt) {
-    	      							contact[$(dt).text().replace(':','')] = $(dt).next('dd').text();
-    	      						});
-    										company.push(moment().utc().format('YYYY-MM-DD HH:mm:ss'));
-    										company.push('suc');
-    	      						company.push(JSON.stringify(contact));
-    										tools.pgQuery(insertSql, company, function (err, result) {
-    											if(err) console.log(err);
-    											else {
-    												each_cb();
-    											}
-    										});
-    	      					}
-    	      				}
-                    )
-                  },
-                  function (err) {
-    	      					if(err) console.log(err);
-    	      					console.log("---------------------",url + '/' + count, 'end')
-    	      					cb();
-    	      			})
-                })
-              }
-            })
+	        	}, catchCompanyListEachPageAfterRequest(url, count, cbEachPage));
 			    },
 			    function (err) {
-		        callback()
+		        callback();
 			    }
 				);
 			}
 		})
 	}, function (err) {
 		if(err) console.log(err);
+    fs.writeFile(errFileName, JSON.stringify(errList));
 	})
-
 })
 
-function getEleAndInsert(data) {
-// function getEleAndInsert() {
+function catchCompanyListEachPageAfterRequest (url, count, cbEachPage) {
+  return function (err, res, data) {
+    console.log("---------------------", url + '/' + count, moment().utc().format());
+    if (err || res.statusCode != 200) {
+      console.log('>>>>>>>>>>>>>>>>>>>>>whileReqError', moment().utc().format(),err);
+      console.log(err|| res.statusCode);
+      count--;
+      cb();
+    }
+    else {
+      async.filter(catchCompanyList(data), checkNotCompanyExist, function(companys) {
+        async.each(companys, function(company, cbEachCompany) {
+          request(
+            {
+            url: company[2],
+            headers: {
+              'User-Agent': 'request'
+            }
+          },
+          catchCompanyDetailAfterRequest(company, cbEachCompany));
+        },
+        function (err) {
+            if(err) console.log(err);
+            console.log("---------------------",url + '/' + count, 'end')
+            cbEachPage();
+        })
+      })
+    }
+  }
+}
+
+function catchCompanyList(data) {
 	var $ = cheerio.load(data);
 	var result = [];
 	$('#J-items-content>div.f-icon.m-item').each( function(i, li) {
@@ -138,12 +105,56 @@ function getEleAndInsert(data) {
 }
 
 function checkNotCompanyExist (company, callback) {
-  tools.pgQuery(checkSidSql, [company[1]], function(err, result){
+  pg.query(checkSidSql, [company[1]], function(err, result){
     if(result.rowCount > 0) {
-      callback(false)
+      callback(false);
     } else {
       console.log('havent')
-      callback(true)
+      callback(true);
     }
   })
+}
+
+function catchCompanyDetailAfterRequest (company, cbEachCompany) {
+  return function (err, res, data) {
+    console.log("=====================",company[1], moment().utc().format());
+    if (err || res.statusCode != 200) {
+      console.log('>>>>>>>>>>>>>>>>>>>>>detailReqError', company[1], moment().utc().format(),err);
+      company.push(moment().utc().format('YYYY-MM-DD HH:mm:ss'));
+      company.push('err');
+      pg.query(insertErrSql, company, function (err, result) {
+        if(err) console.log(err);
+        else {
+          console.log('inserted;');
+          cbEachCompany();
+        }
+      });
+    }
+    else {
+      catchCompanyDetailAndPush(data, company);
+      pg.query(insertSql, company, function (err, result) {
+        if(err) console.log(err);
+        else {
+          cbEachCompany();
+        }
+      });
+    }
+  }
+}
+
+
+function catchCompanyDetailAndPush(data, company) {
+  var $ = cheerio.load(data);
+  var contact = {
+    person: _s.clean($('div.contact-overview>div.contact-info>h1.name').text())
+  };
+  $('div.contact-overview>div.contact-info>dl>dt').each(function(i, dt) {
+    contact[$(dt).text().replace(':','')] = $(dt).next('dd').text();
+  });
+  $('div.contact-detail>dl>dt').each(function(i, dt) {
+    contact[$(dt).text().replace(':','')] = $(dt).next('dd').text();
+  });
+  company.push(moment().utc().format('YYYY-MM-DD HH:mm:ss'));
+  company.push('suc');
+  company.push(JSON.stringify(contact));
 }
