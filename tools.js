@@ -59,9 +59,10 @@ module.exports = {
 			client.query(sql , parameters, function(err, result) {
 				done();
 				if(err) {
-					return callback(err, result);
-				}
+					callback(err, result);
+				} else {
 					callback(null, result);
+				}
 			})
 		})
 	}

@@ -51,58 +51,63 @@ fs.readFile(readFileName, function (err, data) {
                 console.log(err|| res.statusCode);
                 count--;
                 cb();
-	      			} else {
-		    				var companys = getEleAndInsert(data);
-								console.log(companys);
-		    				async.each(companys, function(company,each_cb) {
-	      				request({
-	      					url: company[2],
-	      					headers: {
-	      				  	'User-Agent': 'request'
-	      					}
-	      				}, function (err, res, data) {
-	      					console.log("=====================",company[1], moment().utc().format());
-	      					if (err || res.statusCode != 200) {
-	      						console.log('>>>>>>>>>>>>>>>>>>>>>detailReqError', company[1], moment().utc().format(),err)
-                    company.push(moment().utc().format('YYYY-MM-DD HH:mm:ss'));
-    								company.push('err');
-    								tools.pgQuery(insertErrSql, company, function (err, result) {
-    									if(err) console.log(err);
-    									else {
-    										console.log('inserted;');
-    										each_cb();
-    									}
-    								});
-	      					} else {
-	      						$ = cheerio.load(data);
-	      						var contact = {
-	      							person: _s.clean($('div.contact-overview>div.contact-info>h1.name').text())
-	      						};
-	      						$('div.contact-overview>div.contact-info>dl>dt').each(function(i, dt) {
-	      							contact[$(dt).text().replace(':','')] = $(dt).next('dd').text();
-	      						});
-	      						$('div.contact-detail>dl>dt').each(function(i, dt) {
-	      							contact[$(dt).text().replace(':','')] = $(dt).next('dd').text();
-	      						});
-										company.push(moment().utc().format('YYYY-MM-DD HH:mm:ss'));
-										company.push('suc');
-	      						company.push(JSON.stringify(contact));
-										tools.pgQuery(insertSql, company, function (err, result) {
-											if(err) console.log(err);
-											else {
-												console.log(result);
-												each_cb();
-											}
-										});
-	      					}
-	      				})
-	      			}, function (err) {
-	      					if(err) console.log(err);
-	      					console.log("---------------------",url + '/' + count, 'end')
-	      					cb();
-	      				})
 	      			}
-	      		})
+              else {
+                async.filter(getEleAndInsert(data), checkNotCompanyExist, function(companys) {
+                  async.each(companys, function(company, each_cb) {
+    	      				request(
+                      {
+    	      					url: company[2],
+    	      					headers: {
+    	      				  	'User-Agent': 'request'
+    	      					}
+    	      				},
+                    function (err, res, data) {
+    	      					console.log("=====================",company[1], moment().utc().format());
+    	      					if (err || res.statusCode != 200) {
+    	      						console.log('>>>>>>>>>>>>>>>>>>>>>detailReqError', company[1], moment().utc().format(),err)
+                        company.push(moment().utc().format('YYYY-MM-DD HH:mm:ss'));
+        								company.push('err');
+        								tools.pgQuery(insertErrSql, company, function (err, result) {
+        									if(err) console.log(err);
+        									else {
+        										console.log('inserted;');
+        										each_cb();
+        									}
+        								});
+    	      					}
+                      else {
+    	      						var $ = cheerio.load(data);
+    	      						var contact = {
+    	      							person: _s.clean($('div.contact-overview>div.contact-info>h1.name').text())
+    	      						};
+    	      						$('div.contact-overview>div.contact-info>dl>dt').each(function(i, dt) {
+    	      							contact[$(dt).text().replace(':','')] = $(dt).next('dd').text();
+    	      						});
+    	      						$('div.contact-detail>dl>dt').each(function(i, dt) {
+    	      							contact[$(dt).text().replace(':','')] = $(dt).next('dd').text();
+    	      						});
+    										company.push(moment().utc().format('YYYY-MM-DD HH:mm:ss'));
+    										company.push('suc');
+    	      						company.push(JSON.stringify(contact));
+    										tools.pgQuery(insertSql, company, function (err, result) {
+    											if(err) console.log(err);
+    											else {
+    												each_cb();
+    											}
+    										});
+    	      					}
+    	      				}
+                    )
+                  },
+                  function (err) {
+    	      					if(err) console.log(err);
+    	      					console.log("---------------------",url + '/' + count, 'end')
+    	      					cb();
+    	      			})
+                })
+              }
+            })
 			    },
 			    function (err) {
 		        callback()
@@ -118,27 +123,27 @@ fs.readFile(readFileName, function (err, data) {
 
 function getEleAndInsert(data) {
 // function getEleAndInsert() {
-	$ = cheerio.load(data);
-	var data = [];
+	var $ = cheerio.load(data);
+	var result = [];
 	$('#J-items-content>div.f-icon.m-item').each( function(i, li) {
-    var buff = [
+    result.push([
 			tools.convertHTMLEntity($('div.item-title .title.ellipsis>a',li).html()),
 			Number($('h2.title.ellipsis>a', li).attr('data-hislog')),
 			tools.getContact($('div.item-title .title.ellipsis>a',li).attr('href')),
 			$('.ico-year>span', li).length&&/\d+/.test($('.ico-year>span').attr('class'))?Number(/\d+/.exec($('.ico-year>span').attr('class'))[0]):0,
 			$('.ico-ta', li).length? true:false
-		];
-    if(!checkCompanyExist(buff)) data.push(buff);
+		]);
 	})
-	return data;
+	return result;
 }
 
-function checkCompanyExist (company) {
-  pgQuery(checkSidSql, company[1], function(err, result){
-    if(result.rows.length > 0) {
-      console.log(company)
-      console.log(result)
-      return true;
-    } else return false;
+function checkNotCompanyExist (company, callback) {
+  tools.pgQuery(checkSidSql, [company[1]], function(err, result){
+    if(result.rowCount > 0) {
+      callback(false)
+    } else {
+      console.log('havent')
+      callback(true)
+    }
   })
 }
