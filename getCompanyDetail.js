@@ -1,14 +1,15 @@
-var request = require('./tools.js').tryRequest;
-var cheerio = require('cheerio');
-var async = require('async')
 var fs = require('fs');
-var tools = require('./tools.js');
+var moment = require('moment');
+var async = require('async')
+var cheerio = require('cheerio');
 var _ = require('lodash');
 var _s = require('underscore.string');
-var pg = require('./pg.js');
-var moment = require('moment');
-var redis = require('./redis.js');
-// var readFileName = process.argv[2] || 'test.json';
+
+var request = require('./tools/tools.js').tryRequest;
+var tools = require('./tools/tools.js');
+var pg = require('./tools/pg.js');
+var redis = require('./tools/redis.js');
+
 var readFileName = process.argv[2] || './data/catList.json';
 var errFileName = process.argv[2] || './data/catListErr.json';
 var insertSql = 'INSERT INTO alibaba_company (name, sid, url, gold_supplier, assurance, update_date, status, contact) '
@@ -71,8 +72,6 @@ async.whilst(function () {
   redis.end();
   console.log('All Done.',new Date());
 });
-
-
 
 function catchCompanyListEachPageAfterRequest (url, count, cbEachPage) {
   return function (err, res, data) {

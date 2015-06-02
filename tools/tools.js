@@ -1,6 +1,8 @@
 var retry = require('retry');
 var request = require('request');
-var config = require('./config.js');
+
+var config = require('../config.js');
+
 module.exports = {
 	convertHTMLEntity: function (str) {
 		str = str.replace( /\&amp;/g, '&' );

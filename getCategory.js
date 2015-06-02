@@ -1,12 +1,15 @@
-var request = require('./tools.js').tryRequest;
 var cheerio = require("cheerio");
 var fs = require('fs');
-var tools = require('./tools.js');
 var async = require('async');
-var redis = require('./redis.js');
 var _ = require('lodash');
+
+var tools = require('./tools/tools.js');
+var request = require('./tools/tools.js').tryRequest;
+var redis = require('./tools/redis.js');
+
 var url = 'http://www.alibaba.com/countrysearch/CN-China.html';
 var REDIS_KEY = 'alibaba_category_key';
+
 async.auto({
   homeDate: [getHome],
   firstCat: ['homeDate', getFirstCat],
