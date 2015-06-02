@@ -14,6 +14,7 @@ var insertSql = 'INSERT INTO alibaba_company (name, sid, url, gold_supplier, ass
               + 'VALUES ($1, $2, $3, $4, $5, $6, $7, $8);'
 var insertErrSql = 'INSERT INTO alibaba_company (name, sid, url, gold_supplier, assurance, update_date, status) '
               + 'VALUES ($1, $2, $3, $4, $5, $6, $7);'
+var checkSidSql = 'SELECT id, name, sid, url FROM alibaba_company WHERE sid = $1';
 var cat = [];
 fs.readFile(readFileName, function (err, data) {
 	if(err) console.log(err)
@@ -46,19 +47,10 @@ fs.readFile(readFileName, function (err, data) {
 	        	}, function (err, res, data) {
 	        		console.log("---------------------",url + '/' + count, moment().utc().format());
 	      			if (err || res.statusCode != 200) {
-
-								console.log('>>>>>>>>>>>>>>>>>>>>>whileReqError', moment().utc().format(),err)
-								company.push(moment().utc().format('YYYY-MM-DD HH:mm:ss'));
-								company.push('err');
-								tools.pgQuery(insertErrSql, company, function (err, result) {
-									if(err) console.log(err);
-									else {
-										console.log(result);
-										each_cb();
-									}
-								});
-								cb(true)
-
+                console.log('>>>>>>>>>>>>>>>>>>>>>whileReqError', moment().utc().format(),err)
+                console.log(err|| res.statusCode);
+                count--;
+                cb();
 	      			} else {
 		    				var companys = getEleAndInsert(data);
 								console.log(companys);
@@ -72,8 +64,15 @@ fs.readFile(readFileName, function (err, data) {
 	      					console.log("=====================",company[1], moment().utc().format());
 	      					if (err || res.statusCode != 200) {
 	      						console.log('>>>>>>>>>>>>>>>>>>>>>detailReqError', company[1], moment().utc().format(),err)
-	      						errurl.push(company[1]);
-	      						each_cb();
+                    company.push(moment().utc().format('YYYY-MM-DD HH:mm:ss'));
+    								company.push('err');
+    								tools.pgQuery(insertErrSql, company, function (err, result) {
+    									if(err) console.log(err);
+    									else {
+    										console.log('inserted;');
+    										each_cb();
+    									}
+    								});
 	      					} else {
 	      						$ = cheerio.load(data);
 	      						var contact = {
@@ -95,8 +94,6 @@ fs.readFile(readFileName, function (err, data) {
 												each_cb();
 											}
 										});
-										// console.log(company);
-										// each_cb();
 	      					}
 	      				})
 	      			}, function (err) {
@@ -124,13 +121,24 @@ function getEleAndInsert(data) {
 	$ = cheerio.load(data);
 	var data = [];
 	$('#J-items-content>div.f-icon.m-item').each( function(i, li) {
-		data.push([
+    var buff = [
 			tools.convertHTMLEntity($('div.item-title .title.ellipsis>a',li).html()),
 			Number($('h2.title.ellipsis>a', li).attr('data-hislog')),
 			tools.getContact($('div.item-title .title.ellipsis>a',li).attr('href')),
 			$('.ico-year>span', li).length&&/\d+/.test($('.ico-year>span').attr('class'))?Number(/\d+/.exec($('.ico-year>span').attr('class'))[0]):0,
 			$('.ico-ta', li).length? true:false
-		]);
+		];
+    if(!checkCompanyExist(buff)) data.push(buff);
 	})
 	return data;
+}
+
+function checkCompanyExist (company) {
+  pgQuery(checkSidSql, company[1], function(err, result){
+    if(result.rows.length > 0) {
+      console.log(company)
+      console.log(result)
+      return true;
+    } else return false;
+  })
 }
