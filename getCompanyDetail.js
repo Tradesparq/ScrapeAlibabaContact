@@ -104,32 +104,6 @@ function catchCompanyListEachPageAfterRequest (url, count, cbEachPage) {
   }
 }
 
-function catchCompanyList(data) {
-	var $ = cheerio.load(data);
-	var result = [];
-	$('#J-items-content>div.f-icon.m-item').each( function(i, li) {
-    result.push([
-			tools.convertHTMLEntity($('div.item-title .title.ellipsis>a',li).html()),
-			Number($('h2.title.ellipsis>a', li).attr('data-hislog')),
-			tools.getContact($('div.item-title .title.ellipsis>a',li).attr('href')),
-			$('.ico-year>span', li).length&&/\d+/.test($('.ico-year>span').attr('class'))?Number(/\d+/.exec($('.ico-year>span').attr('class'))[0]):0,
-			$('.ico-ta', li).length? true:false
-		]);
-	})
-	return result;
-}
-
-function checkNotCompanyExist (company, callback) {
-  pg.query(checkSidSql, [company[1]], function(err, result){
-    if(result.rowCount > 0) {
-      callback(false);
-    } else {
-      console.log('havent')
-      callback(true);
-    }
-  })
-}
-
 function catchCompanyDetailAfterRequest (company, cbEachCompany) {
   return function (err, res, data) {
     console.log("=====================",company[1], moment().utc().format());
@@ -157,6 +131,31 @@ function catchCompanyDetailAfterRequest (company, cbEachCompany) {
   }
 }
 
+function catchCompanyList(data) {
+	var $ = cheerio.load(data);
+	var result = [];
+	$('#J-items-content>div.f-icon.m-item').each( function(i, li) {
+    result.push([
+			tools.convertHTMLEntity($('div.item-title .title.ellipsis>a',li).html()),
+			Number($('h2.title.ellipsis>a', li).attr('data-hislog')),
+			tools.getContact($('div.item-title .title.ellipsis>a',li).attr('href')),
+			$('.ico-year>span', li).length&&/\d+/.test($('.ico-year>span').attr('class'))?Number(/\d+/.exec($('.ico-year>span').attr('class'))[0]):0,
+			$('.ico-ta', li).length? true:false
+		]);
+	})
+	return result;
+}
+
+function checkNotCompanyExist (company, callback) {
+  pg.query(checkSidSql, [company[1]], function(err, result){
+    if(result.rowCount > 0) {
+      callback(false);
+    } else {
+      console.log('havent')
+      callback(true);
+    }
+  })
+}
 
 function catchCompanyDetailAndPush(data, company) {
   var $ = cheerio.load(data);
