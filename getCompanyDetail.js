@@ -7,6 +7,7 @@ var _ = require('lodash');
 var _s = require('underscore.string');
 var pg = require('./pg.js');
 var moment = require('moment');
+var redis = require('./redis.js');
 // var readFileName = process.argv[2] || 'test.json';
 var readFileName = process.argv[2] || './data/catList.json';
 var errFileName = process.argv[2] || './data/catListErr.json';
@@ -15,48 +16,63 @@ var insertSql = 'INSERT INTO alibaba_company (name, sid, url, gold_supplier, ass
 var insertErrSql = 'INSERT INTO alibaba_company (name, sid, url, gold_supplier, assurance, update_date, status) '
               + 'VALUES ($1, $2, $3, $4, $5, $6, $7);'
 var checkSidSql = 'SELECT id, name, sid, url FROM alibaba_company WHERE sid = $1';
-var errList = [];
-fs.readFile(readFileName, function (err, data) {
-	if(err) console.log(err);
-	var list = JSON.parse(data);
-	async.eachSeries(list, function(url, callback) {
-		console.log("+++++++++++++++++++++",url, moment().utc().format());
-		request({
-			url: url,
-			headers: {
-	    	'User-Agent': 'request'
-			}
-  	}, function (err, res, data) {
-			if (err || res.statusCode != 200) {
-				console.log('eachReqError',err);
-        errList.push(url);
-				callback();
-			} else {
-				$ = cheerio.load(data);
-				times = $('a.next').prev().html() || 1;
-				var count = 0;
-				async.whilst(
-			    function () { return count < times; },
-			    function (cbEachPage) {
-		        count++;
-	      		request({
-	      			url: url + '/' + count,
-	      			headers: {
-	      	    	'User-Agent': 'request'
-	      			}
-	        	}, catchCompanyListEachPageAfterRequest(url, count, cbEachPage));
-			    },
-			    function (err) {
-		        callback();
-			    }
-				);
-			}
-		})
-	}, function (err) {
-		if(err) console.log(err);
-    fs.writeFile(errFileName, JSON.stringify(errList));
-	})
-})
+var has = true;
+var REDIS_KEY = 'alibaba_category_key';
+
+async.whilst(function () {
+  return has;
+}, function (callback) {
+  redis.spop(REDIS_KEY, function (err, url) {
+    if (url) {
+      console.log("+++++++++++++++++++++",url, moment().utc().format());
+      request({
+        url: url,
+        headers: {
+          'User-Agent': 'request'
+        }
+      }, function (err, res, data) {
+        if (err || res.statusCode != 200) {
+          console.log('eachReqError',err);
+          errList.push(url);
+          callback();
+        } else {
+          $ = cheerio.load(data);
+          times = $('a.next').prev().html() || 1;
+          var count = 0;
+          async.whilst(
+            function () { return count < times; },
+            function (cbEachPage) {
+              count++;
+              request({
+                url: url + '/' + count,
+                headers: {
+                  'User-Agent': 'request'
+                }
+              }, catchCompanyListEachPageAfterRequest(url, count, cbEachPage));
+            },
+            function (err) {
+              if(err) {
+                redis.sadd(REDIS_KEY, url, function(){
+                  callback();
+                });
+              } else {
+                callback();
+              }
+            }
+          );
+        }
+      })
+    } else {
+      has = false;
+      callback();
+    }
+  });
+}, function (err) {
+  redis.end();
+  console.log('All Done.',new Date());
+});
+
+
 
 function catchCompanyListEachPageAfterRequest (url, count, cbEachPage) {
   return function (err, res, data) {
