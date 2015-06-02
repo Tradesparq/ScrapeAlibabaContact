@@ -20,6 +20,7 @@ async.auto({
   }, function(err) {
     if(err) console.log(err);
     else console.log('---- Total add', result.catList.length, 'company ids into redis', REDIS_KEY, '----')
+    redis.end();
   })
 })
 
