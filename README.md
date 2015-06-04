@@ -35,6 +35,7 @@ node getCompanyList.js
 select * from alibaba_company;
 select count(*) from alibaba_company;
 select * from alibaba_company order by id desc limit 50 ;
+SELECT sid, count(*) as count FROM alibaba_company group by sid order by count desc;
 ```
 
 #### format for export
