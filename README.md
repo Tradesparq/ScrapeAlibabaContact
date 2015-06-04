@@ -2,10 +2,12 @@
  Scrape Alibaba Supplier contact
 
 ### Workflow
-1. request alibaba category and add category to redis.
-2. get category from redis, request list, insert brief info about company to the postgres.
-3. get brief info from postgres, add url to redis.
-4. request company contact, write data to postgres.
+>1. request alibaba category and add category to redis.
+>2. get category from redis, request list, insert brief info about company to the postgres.
+>3. get brief info from postgres, add url to redis.
+>4. request company contact, write data to postgres.
+
+
 ----
 #### run postgres docker
 ```bash
