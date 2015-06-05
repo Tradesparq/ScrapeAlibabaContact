@@ -80,7 +80,7 @@ function getSecondCat(cb, result) {
 			if (err) cb(err);
 			cb(null, cat)
 		})
-	}//req
+	}
 
 }
 

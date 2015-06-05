@@ -12,10 +12,10 @@ var redis = require('./tools/redis.js');
 // var getRandomSql = 'SELECT id, name, sid, url, status FROM alibaba_company WHERE status = \'brief\' ORDER BY RANDOM() LIMIT 1;';
 var updateDetailSql = 'UPDATE alibaba_company SET contact = $1, update_date = $2, status = $3 where id = $4';
 var updateDetailErrSql = 'UPDATE alibaba_company SET update_date = $1, status = $2 where id = $3';
-var has = 3;
-// var has = true;
+// var has = 3;
+var has = true;
 var REDIS_KEY = 'alibaba_company_key';
-
+pg.connect();
 async.whilst(function () {
   return has;
 }, function (callback) {
@@ -30,10 +30,10 @@ async.whilst(function () {
         }
       }, function (err, res, data) {
         if (err || res.statusCode != 200) {
-          console.log('eachReqError',err);
+          console.log('eachReqError',err || res.statusCode);
           pg.query(updateDetailErrSql, [
             moment().utc().format('YYYY-MM-DD HH:mm:ss'),
-            'detailErr',
+            res.statusCode == 404?'404' : 'detailErr',
             company.id
           ], function (err) {
             if(err) console.log(err)
@@ -58,6 +58,7 @@ async.whilst(function () {
   });
 }, function (err) {
   redis.end();
+  pg.end();
   console.log('All Done.',new Date());
 });
 

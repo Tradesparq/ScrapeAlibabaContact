@@ -8,6 +8,7 @@ var _s = require('underscore.string');
 var request = require('./tools/tools.js').tryRequest;
 var tools = require('./tools/tools.js');
 var pg = require('./tools/pg.js');
+
 var redis = require('./tools/redis.js');
 
 var insertBriefSql = 'INSERT INTO alibaba_company (name, sid, url, gold_supplier, assurance, update_date, status) '
@@ -16,6 +17,7 @@ var checkSidSql = 'SELECT id, name, sid, url FROM alibaba_company WHERE sid = $1
 var has = true;
 var REDIS_KEY = 'alibaba_category_key';
 
+pg.connect();
 async.whilst(function () {
   return has;
 }, function (callback) {
@@ -66,6 +68,7 @@ async.whilst(function () {
   });
 }, function (err) {
   redis.end();
+  pg.end();
   console.log('All Done.',new Date());
 });
 
@@ -99,53 +102,9 @@ function catchCompanyListEachPageAfterRequest (url, count, cbEachPage) {
           console.log("---------------------",url + '/' + count, 'end')
           cbEachPage();
       })
-      // async.filter(catchCompanyList(data), checkNotCompanyExist, function(companys) {
-      //   async.each(companys, function(company, cbEachCompany) {
-      //     request(
-      //       {
-      //       url: company[2],
-      //       headers: {
-      //         'User-Agent': 'request'
-      //       }
-      //     },
-      //     catchCompanyDetailAfterRequest(company, cbEachCompany));
-      //   },
-      //   function (err) {
-      //       if(err) console.log(err);
-      //       console.log("---------------------",url + '/' + count, 'end')
-      //       cbEachPage();
-      //   })
-      // })
     }
   }
 }
-
-// function catchCompanyDetailAfterRequest (company, cbEachCompany) {
-//   return function (err, res, data) {
-//     console.log("=====================",company[1], moment().utc().format());
-//     if (err || res.statusCode != 200) {
-//       console.log('>>>>>>>>>>>>>>>>>>>>>detailReqError', company[1], moment().utc().format(),err);
-//       company.push(moment().utc().format('YYYY-MM-DD HH:mm:ss'));
-//       company.push('err');
-//       pg.query(insertErrSql, company, function (err, result) {
-//         if(err) console.log(err);
-//         else {
-//           console.log('inserted;');
-//           cbEachCompany();
-//         }
-//       });
-//     }
-//     else {
-//       catchCompanyDetailAndPush(data, company);
-//       pg.query(insertSql, company, function (err, result) {
-//         if(err) console.log(err);
-//         else {
-//           cbEachCompany();
-//         }
-//       });
-//     }
-//   }
-// }
 
 function catchCompanyList(data) {
 	var $ = cheerio.load(data);
@@ -170,20 +129,4 @@ function checkCompanyExist (company, callback) {
       callback(false);
     }
   })
-}
-
-function catchCompanyDetailAndPush(data, company) {
-  var $ = cheerio.load(data);
-  var contact = {
-    person: _s.clean($('div.contact-overview>div.contact-info>h1.name').text())
-  };
-  $('div.contact-overview>div.contact-info>dl>dt').each(function(i, dt) {
-    contact[$(dt).text().replace(':','')] = $(dt).next('dd').text();
-  });
-  $('div.contact-detail>dl>dt').each(function(i, dt) {
-    contact[$(dt).text().replace(':','')] = $(dt).next('dd').text();
-  });
-  company.push(moment().utc().format('YYYY-MM-DD HH:mm:ss'));
-  company.push('suc');
-  company.push(JSON.stringify(contact));
 }
