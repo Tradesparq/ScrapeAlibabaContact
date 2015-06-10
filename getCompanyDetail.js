@@ -11,6 +11,7 @@ var pg = require('./tools/pg.js');
 var redis = require('./tools/redis.js');
 // var getRandomSql = 'SELECT id, name, sid, url, status FROM alibaba_company WHERE status = \'brief\' ORDER BY RANDOM() LIMIT 1;';
 var updateDetailSql = 'UPDATE alibaba_company SET contact = $1, update_date = $2, status = $3 where id = $4';
+var updateUrlSql = 'UPDATE alibaba_company SET update_date = $1, url=$2 where id = $3';
 var updateDetailErrSql = 'UPDATE alibaba_company SET update_date = $1, status = $2 where id = $3';
 // var has = 3;
 var has = true;
@@ -23,31 +24,31 @@ async.whilst(function () {
     if (company) {
       company = JSON.parse(company)
       console.log("+++++++++++++++++++++",company.url, moment().utc().format());
-      request({
-        url: company.url,
-        headers: {
-          'User-Agent': 'request'
-        }
-      }, function (err, res, data) {
-        if (err || res.statusCode != 200) {
+      request(company.url, function (err, res, data) {
+        if (res && res.statusCode == 301) {
+          pg.query(updateUrlSql, [
+            moment().utc().format('YYYY-MM-DD HH:mm:ss'),
+            res.headers.location,
+            company.id
+          ], function (err) {
+            if(err) console.log(err);
+            callback();
+          })
+          callback();
+        } else if (err || res.statusCode != 200) {
           console.log('eachReqError',err || res.statusCode);
           pg.query(updateDetailErrSql, [
             moment().utc().format('YYYY-MM-DD HH:mm:ss'),
-            res.statusCode == 404?'404' : 'detailErr',
+            res && res.statusCode && res.statusCode == 404?'404' : 'detailErr',
             company.id
           ], function (err) {
-            if(err) console.log(err)
-            else {
-              callback()
-            }
+            if(err) console.log(err);
+            callback();
           })
         } else {
-          // console.log( catchCompanyDetailAndPush(data, company))
           pg.query(updateDetailSql, catchCompanyDetailAndPush(data, company), function (err, result) {
-            if(err) console.log(err);
-            else {
-              callback();
-            }
+          if(err) console.log(err);
+            callback();
           });
         }
       })

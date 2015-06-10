@@ -24,12 +24,7 @@ async.whilst(function () {
   redis.spop(REDIS_KEY, function (err, url) {
     if (url) {
       console.log("+++++++++++++++++++++",url, moment().utc().format());
-      request({
-        url: url,
-        headers: {
-          'User-Agent': 'request'
-        }
-      }, function (err, res, data) {
+      request(url, function (err, res, data) {
         if (err || res.statusCode != 200) {
           console.log('eachReqError',err);
           errList.push(url);
@@ -42,12 +37,7 @@ async.whilst(function () {
             function () { return count < times; },
             function (cbEachPage) {
               count++;
-              request({
-                url: url + '/' + count,
-                headers: {
-                  'User-Agent': 'request'
-                }
-              }, catchCompanyListEachPageAfterRequest(url, count, cbEachPage));
+              request(url + '/' + count, catchCompanyListEachPageAfterRequest(url, count, cbEachPage));
             },
             function (err) {
               if(err) {
@@ -79,7 +69,7 @@ function catchCompanyListEachPageAfterRequest (url, count, cbEachPage) {
       console.log('>>>>>>>>>>>>>>>>>>>>>whileReqError', moment().utc().format(),err);
       console.log(err|| res.statusCode);
       count--;
-      cb();
+      cbEachPage();
     }
     else {
       async.each(catchCompanyList(data), function(company, cbEachCompany) {

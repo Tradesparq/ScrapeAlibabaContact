@@ -30,10 +30,16 @@ module.exports = {
 		to = 'contactinfo.html';
 		return str.replace(from,to);
 	},
-	tryRequest: function (option, cb) {
+	tryRequest: function (url, cb) {
 	  var operation = retry.operation();
 	  operation.attempt(function(currentAttempt) {
-	    request(option, function(err, res, data) {
+	    request({
+				url: url,
+				followRedirect: false,
+        headers: {
+          'User-Agent': 'request'
+        }
+			}, function(err, res, data) {
 	      if (operation.retry(err)) {
 	        return;
 	      }

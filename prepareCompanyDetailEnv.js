@@ -1,7 +1,7 @@
 var async = require('async');
 var pg = require('./tools/pg.js');
 var redis = require('./tools/redis.js');
-var getBriefSql = 'SELECT id, url FROM alibaba_company WHERE status <> \'detail\'';
+var getBriefSql = 'SELECT id, url FROM alibaba_company WHERE status <> \'detail\' AND status <> \'404\'';
 var REDIS_KEY = 'alibaba_company_key';
 pg.connect();
 pg.query(getBriefSql, [], function (err, data) {

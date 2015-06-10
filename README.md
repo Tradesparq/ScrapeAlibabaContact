@@ -14,9 +14,14 @@
 docker run -p 5432:5432 --restart=always --name alibaba -e POSTGRES_PASSWORD=123456 -d postgres:9.3
 ```
 
+#### login in pg
+```bash
+psql -U postgres -d alibaba -h 127.0.0.1 -p 5432
+```
+
 #### create table
 ```sql
-create table alibaba_company
+create table alibaba_company_fa
 (
 id BIGSERIAL PRIMARY KEY,
 name character varying(255),
@@ -27,12 +32,12 @@ gold_supplier bigint,
 assurance boolean,
 contact json,
 update_date timestamp
-)
+);
 ```
 
 #### run redis server
 ```bash
-redis-server &
+docker run -p 6379:6379 --restart=always --name redis -d redis
 ```
 
 #### get category insert to redis
