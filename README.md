@@ -83,3 +83,8 @@ SRANDMEMBER alibaba_company_key 5
 ```sql
 select id, name, url, contact->>'person' as Person,contact->>'Department' as Department,contact->>'Job Title' as Job_Title,contact->>'Telephone' as Telephone,contact->>'Mobile Phone' as Mobile_Phone,contact->>'Fax' as Fax,contact->>'Address' as Address,contact->>'Country/Region' as Country_Region,contact->>'Province/State' as Province_State, contact->>'City' as City,contact->>'Province/State' as Province_State,contact->>'Zip' as Zip from alibaba_company where status = 'detail' and contact->>'person' <> '' ;
 ```
+
+
+
+### Can't Request Some Company Url
+When request company url such as "http://www.alibaba.com/member/yuen_/contactinfo.html", "http://www.alibaba.com/member/yuen_/contactinfo.html", because of the hostname include '_', node can't access the page.

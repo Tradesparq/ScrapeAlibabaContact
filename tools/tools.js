@@ -1,6 +1,6 @@
 var retry = require('retry');
 var request = require('request');
-
+var _ = require('lodash');
 var config = require('../config.js');
 
 module.exports = {
@@ -30,16 +30,18 @@ module.exports = {
 		to = 'contactinfo.html';
 		return str.replace(from,to);
 	},
-	tryRequest: function (url, cb) {
+	tryRequest: function (option, cb) {
 	  var operation = retry.operation();
 	  operation.attempt(function(currentAttempt) {
-	    request({
-				url: url,
-				followRedirect: false,
+	    request(_.assign({
+				followRedirect: true,
+				followAllRedirects: true,
+				maxRedirects: 20,
         headers: {
           'User-Agent': 'request'
         }
-			}, function(err, res, data) {
+			}, option), function(err, res, data) {
+				// console.log(err.stack)
 	      if (operation.retry(err)) {
 	        return;
 	      }

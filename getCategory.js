@@ -28,7 +28,7 @@ async.auto({
 })
 
 function getHome(cb, result) {
-	request(url, function (err, res, data) {
+	request({url: url}, function (err, res, data) {
 		if (!err && res.statusCode == 200) {
 			cb(null, data);
 		} else {
@@ -56,7 +56,7 @@ function getSecondCat(cb, result) {
 		var firstCat = _.clone(result.firstCat);
 		var cat = _.clone(result.firstCat);
 		async.eachSeries(Object.keys(firstCat), function(key, callback) {
-			request(firstCat[key], function (err, res, data) {
+			request({url: firstCat[key]}, function (err, res, data) {
 				console.log('req ', key);
 				if (!err && res.statusCode == 200) {
 					cat[key] = {};

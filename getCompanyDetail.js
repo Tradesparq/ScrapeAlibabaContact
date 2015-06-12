@@ -24,18 +24,19 @@ async.whilst(function () {
     if (company) {
       company = JSON.parse(company)
       console.log("+++++++++++++++++++++",company.url, moment().utc().format());
-      request(company.url, function (err, res, data) {
-        if (res && res.statusCode == 301) {
-          pg.query(updateUrlSql, [
-            moment().utc().format('YYYY-MM-DD HH:mm:ss'),
-            res.headers.location,
-            company.id
-          ], function (err) {
-            if(err) console.log(err);
-            callback();
-          })
-          callback();
-        } else if (err || res.statusCode != 200) {
+      request({url: company.url}, function (err, res, data) {
+        // if (res && res.statusCode == 301) {
+        //   pg.query(updateUrlSql, [
+        //     moment().utc().format('YYYY-MM-DD HH:mm:ss'),
+        //     res.headers.location,
+        //     company.id
+        //   ], function (err) {
+        //     if(err) console.log(err);
+        //     callback();
+        //   })
+        //   callback();
+        // } else if (err || res.statusCode != 200) {
+        if (err || res.statusCode != 200) {
           console.log('eachReqError',err || res.statusCode);
           pg.query(updateDetailErrSql, [
             moment().utc().format('YYYY-MM-DD HH:mm:ss'),
