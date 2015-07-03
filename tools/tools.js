@@ -17,35 +17,37 @@ module.exports = {
 	},
 	getCIDtoURL: function (str) {
 		reg = /\/(\d+)\//;
-		// urlForm = 'http://www.alibaba.com/catalogs/corporations/CID_replaceHere_';
-		urlForm = 'http://www.alibaba.com/catalogs/corporations/CID_replaceHere_--CN------------------50';
+		// urlForm = 'http://www.alibaba.com/catalogs/corporations/'
+		// 				 + 'CID_replaceHere_';
+		urlForm = 'http://www.alibaba.com/catalogs/corporations/'
+						+ 'CID_replaceHere_--CN------------------50';
 		if(!reg.test(str)) return false;
 		else {
 			cid = reg.exec(str)[1];
 		}
-		return urlForm.replace('_replaceHere_',cid);
+		return urlForm.replace('_replaceHere_', cid);
 	},
 	getContact: function (str) {
 		from = 'company_profile.html#top-nav-bar';
 		to = 'contactinfo.html';
-		return str.replace(from,to);
+		return str.replace(from, to);
 	},
 	tryRequest: function (option, cb) {
-	  var operation = retry.operation();
-	  operation.attempt(function(currentAttempt) {
+	  var operation = retry.operation({
+			retries: 5
+		});
+	  operation.attempt(function (currentAttempt) {
 	    request(_.assign({
-				followRedirect: true,
-				followAllRedirects: true,
-				maxRedirects: 20,
+				followRedirect: false,
         headers: {
           'User-Agent': 'request'
         }
-			}, option), function(err, res, data) {
-				// console.log(err.stack)
+			}, option), function (err, res, data) {
+				// console.log(err.stack);
 	      if (operation.retry(err)) {
 	        return;
 	      }
-	      cb(err ? operation.mainError() : null, res, data);
+	      cb(err? operation.mainError(): null, res, data);
 	    });
 	  });
 	}

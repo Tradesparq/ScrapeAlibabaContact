@@ -16,13 +16,14 @@ async.auto({
   secondCat: ['firstCat', getSecondCat],
   catList: ['secondCat', toUrlList]
 }, function (err, result) {
-  async.eachSeries(result.catList, function(cat, callback) {
-    redis.sadd(REDIS_KEY, cat, function(){
+  async.eachSeries(result.catList, function (cat, callback) {
+    redis.sadd(REDIS_KEY, cat, function (){
       callback();
     });
   }, function(err) {
-    if(err) console.log(err);
-    else console.log('---- Total add', result.catList.length, 'company ids into redis', REDIS_KEY, '----')
+    if (err) console.log(err);
+    else console.log('---- Total add', result.catList.length,
+    'company ids into redis', REDIS_KEY, '----')
     redis.end();
   })
 })
@@ -39,36 +40,38 @@ function getHome(cb, result) {
 
 function getFirstCat(cb, result) {
 	var cat = {};
-	if(result.homeDate) {
+	if (result.homeDate) {
 		var $ = cheerio.load(result.homeDate);
 		var list = $('div.vi-component>ul.wordlist-class7>li>a');
 		list.each(function (i, item) {
 			cat[tools.convertHTMLEntity($(item).html())] = $(item).attr('href');
 		});
 		console.log(cat);
-		cb(null, cat)
+		cb(null, cat);
 	}
 }
 
 function getSecondCat(cb, result) {
-	var cat = {}
+	var cat = {};
 	if(result.firstCat) {
 		var firstCat = _.clone(result.firstCat);
 		var cat = _.clone(result.firstCat);
-		async.eachSeries(Object.keys(firstCat), function(key, callback) {
+		async.eachSeries(Object.keys(firstCat), function (key, callback) {
 			request({url: firstCat[key]}, function (err, res, data) {
 				console.log('req ', key);
 				if (!err && res.statusCode == 200) {
 					cat[key] = {};
 					var $ = cheerio.load(data);
 					var li = $('div.categorylist>div.section>ul>li');
-					li.each(function(i, item) {
-						var catName = tools.convertHTMLEntity($('a', item).html())
+					li.each(function (i, item) {
+						var catName = tools.convertHTMLEntity($('a', item).html());
 						cat[key][catName] = tools.getCIDtoURL($('a',item).attr('href'));
-						if($(item).next('ul').length) { // has child cat
-							cat[key][catName] = {}
-							$(item).next('ul').children('li').each(function(i, childItem) {
-								cat[key][catName][tools.convertHTMLEntity($('a', childItem).html())] = tools.getCIDtoURL($('a', childItem).attr('href'));
+						if ($(item).next('ul').length) { // has child cat
+							cat[key][catName] = {};
+							$(item).next('ul').children('li').each(function (i, childItem) {
+								cat[key][catName][tools.convertHTMLEntity(
+                  $('a', childItem).html())] = tools.getCIDtoURL(
+                    $('a', childItem).attr('href'));
 							})
 						}
 
@@ -76,7 +79,7 @@ function getSecondCat(cb, result) {
 					callback();
 				}
 			})
-		}, function(err) {
+		}, function (err) {
 			if (err) cb(err);
 			cb(null, cat)
 		})
@@ -90,12 +93,6 @@ function toUrlList (cb, result) {
 		var result = _.uniq(_.flatten(Object.keys(secondCat).map(function (e) {
 					return catEach(secondCat[e]);
 				}), true));
-
-		// fs.writeFile('./data/catList.json', JSON.stringify(result), function (err) {
-		// 	console.log(result, writeFileName)
-		// 	if(!err) console.log(writeFileName, ' saved!');
-		// 	cb(null, result)
-		// })
     cb(null, result);
 	}
 }
