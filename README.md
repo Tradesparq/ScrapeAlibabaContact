@@ -87,4 +87,4 @@ select id, name, url, contact->>'person' as Person,contact->>'Department' as Dep
 
 
 ### Can't Request Some Company Url
-When request company url such as "http://www.alibaba.com/member/yuen_/contactinfo.html", "http://www.alibaba.com/member/yuen_/contactinfo.html", because of the hostname include '_', node can't access the page.
+When request company url such as http://www.alibaba.com/member/yuen_/contactinfo.html, will redirect to http://yuen_.fm.alibaba.com/contactinfo.html, due to the hostname include '_', node.js can't access the page.
