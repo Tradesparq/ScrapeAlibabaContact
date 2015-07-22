@@ -5,7 +5,7 @@ var cheerio = require('cheerio');
 var _ = require('lodash');
 var _s = require('underscore.string');
 
-var request = require('./tools/tools.js').tryRequest;
+var request = require('./tools/tools.js').tryRequest(false);
 var tools = require('./tools/tools.js');
 var pg = require('./tools/pg.js');
 
@@ -67,11 +67,9 @@ async.whilst(function () {
 
 function catchCompanyListEachPageAfterRequest (url, count, cbEachPage) {
   return function (err, res, data) {
-    console.log("---------------------", url + '/' + count,
-      moment().utc().format());
+    console.log("---------------------", url + '/' + count, moment().utc().format());
     if (err || res.statusCode != 200) {
-      console.log('>>>>>>>>>>>>>>>>>>>>>whileReqError',
-        moment().utc().format(),err);
+      console.log('>>>>>>>>>>>>>>>>>>>>>whileReqError', moment().utc().format(),err);
       console.log(err|| res.statusCode);
       count--;
       cbEachPage();
@@ -91,8 +89,7 @@ function catchCompanyListEachPageAfterRequest (url, count, cbEachPage) {
             })
           }
         })
-      },
-      function (err) {
+      }, function (err) {
           if (err) console.log(err);
           console.log("---------------------",url + '/' + count, 'end')
           cbEachPage();
@@ -102,25 +99,27 @@ function catchCompanyListEachPageAfterRequest (url, count, cbEachPage) {
 }
 
 function catchCompanyList(data) {
-	var $ = cheerio.load(data);
-	var result = [];
-	$('#J-items-content>div.f-icon.m-item').each(function (i, li) {
+  var $ = cheerio.load(data);
+  var result = [];
+  $('#J-items-content>div.f-icon.m-item').each(function (i, li) {
     result.push([
-			tools.convertHTMLEntity($('div.item-title .title.ellipsis>a',li).html()),
-			Number($('h2.title.ellipsis>a', li).attr('data-hislog')),
-			tools.getContact($('div.item-title .title.ellipsis>a',li).attr('href')),
-			$('.ico-year>span', li).length
+      tools.convertHTMLEntity($('div.item-title .title.ellipsis>a',li).html()),
+      Number($('h2.title.ellipsis>a', li).attr('data-hislog')),
+      tools.getContact($('div.item-title .title.ellipsis>a',li).attr('href')),
+      $('.ico-year>span', li).length
       && /\d+/.test($('.ico-year>span').attr('class'))?
       Number(/\d+/.exec($('.ico-year>span').attr('class'))[0]): 0,
-			$('.ico-ta', li).length? true: false
-		]);
-	})
-	return result;
+      $('.ico-ta', li).length? true: false
+    ]);
+  })
+  return result;
 }
 
 function checkCompanyExist (company, callback) {
   pg.query(checkSidSql, [company[1]], function (err, result){
-    if (result.rowCount > 0) {
+    if (err) {
+      console.log(err)
+    } else if (result.rowCount > 0) {
       callback(true);
     } else {
       callback(false);

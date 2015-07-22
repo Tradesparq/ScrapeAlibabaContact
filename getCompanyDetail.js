@@ -5,7 +5,7 @@ var cheerio = require('cheerio');
 var _ = require('lodash');
 var _s = require('underscore.string');
 
-var request = require('./tools/tools.js').tryRequest;
+var request = require('./tools/tools.js').tryRequest(false);
 var tools = require('./tools/tools.js');
 var pg = require('./tools/pg.js');
 var redis = require('./tools/redis.js');
