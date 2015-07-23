@@ -28,9 +28,11 @@ async.whilst(function () {
       console.log("+++++++++++++++++++++", url, moment().utc().format());
       request({url: url}, function (err, res, data) {
         if (err || res.statusCode != 200) {
-          console.log('eachReqError', err);
-          errList.push(url);
-          callback();
+          console.log("+++++++++++++++++++++", url, 'eachReqError', err, moment().utc().format());
+          redis.sadd(REDIS_KEY, url, function (err) {
+            if (err) console.log("+++++++++++++++++++++", url, "sadd error",  moment().utc().format());
+            callback();
+          })
         } else {
           $ = cheerio.load(data);
           times = $('a.next').prev().html() || 1;
@@ -45,6 +47,7 @@ async.whilst(function () {
             function (err) {
               if (err) {
                 redis.sadd(REDIS_KEY, url, function (){
+                  console.log("+++++++++++++++++++++", url, "sadd error", moment().utc().format());
                   callback();
                 });
               } else {

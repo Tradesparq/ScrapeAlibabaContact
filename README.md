@@ -16,12 +16,15 @@ docker run -p 5432:5432 --restart=always --name alibaba -e POSTGRES_PASSWORD=123
 
 #### login in pg
 ```bash
-psql -U postgres -d alibaba -h 127.0.0.1 -p 5432
+docker exec -i -t alibaba bash
+psql -U postgres
+create database alibaba;
+\c alibaba
 ```
 
 #### create table
 ```sql
-create table alibaba_company_fa
+create table alibaba_company
 (
 id BIGSERIAL PRIMARY KEY,
 name character varying(255),
@@ -87,4 +90,4 @@ select id, name, url, contact->>'person' as Person,contact->>'Department' as Dep
 
 
 ### Can't Request Some Company Url
-When request company url such as http://www.alibaba.com/member/yuen_/contactinfo.html, will redirect to http://yuen_.fm.alibaba.com/contactinfo.html, due to the hostname include '_', node.js can't access the page.
+When request company url such as http://www.alibaba.com/member/yuen_/contactinfo.html, will redirect to http://yuen_.fm.alibaba.com/contactinfo.html, due to the hostname include '_', node.js can't access the page. (http://frank_gu.fm.alibaba.com/contactinfo.html can request)

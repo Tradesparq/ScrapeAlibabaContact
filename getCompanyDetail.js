@@ -27,14 +27,15 @@ async.whilst(function () {
       company = JSON.parse(company)
       console.log("+++++++++++++++++++++",
         company.url, moment().utc().format());
-      if (/\/\/[^\/]*_[^\/]*\//.test(company.url)) {
+      if (/\/\/[^\/]*_\.[^\/]*\//.test(company.url)) {
         pg.query(updateUrlSql, [
           moment().utc().format('YYYY-MM-DD HH:mm:ss'),
           company.url,
           'CANT REQ',
           company.id
         ], function (err) {
-          if (err) console.log('ssss',err);
+          if (err) console.log("+++++++++++++++++++++", company.url, err, 
+            moment().utc().format());
           callback();
         })
       } else {
@@ -44,11 +45,12 @@ async.whilst(function () {
             pg.query(updateUrlSql, [
               moment().utc().format('YYYY-MM-DD HH:mm:ss'),
               res.headers.location,
-              /\/\/[^\/]*_[^\/]*\//.test(res.headers.location)?
+              /\/\/[^\/]*_\.[^\/]*\//.test(res.headers.location)?
               'CANT REQ': 'brief',
               company.id
             ], function (err) {
-              if (err) console.log('ssss',err);
+              if (err) console.log("+++++++++++++++++++++", company.url, err, 
+              moment().utc().format());
               callback();
             })
             // callback();
@@ -60,13 +62,15 @@ async.whilst(function () {
               res && res.statusCode && res.statusCode == 404? '404': 'detailErr',
               company.id
             ], function (err) {
-              if (err) console.log(err);
+              if (err) console.log("+++++++++++++++++++++", company.url, err, 
+                moment().utc().format());
               callback();
             })
           } else {
             pg.query(updateDetailSql, catchCompanyDetailAndPush(data, company),
             function (err, result) {
-              if (err) console.log(err);
+              if (err) console.log("+++++++++++++++++++++", company.url, err, 
+              moment().utc().format());
                 callback();
             });
           }
