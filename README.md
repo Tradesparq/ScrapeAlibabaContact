@@ -84,9 +84,18 @@ SRANDMEMBER alibaba_company_key 5
 
 #### format for export
 ```sql
-select id, name, url, contact->>'person' as Person,contact->>'Department' as Department,contact->>'Job Title' as Job_Title,contact->>'Telephone' as Telephone,contact->>'Mobile Phone' as Mobile_Phone,contact->>'Fax' as Fax,contact->>'Address' as Address,contact->>'Country/Region' as Country_Region,contact->>'Province/State' as Province_State, contact->>'City' as City,contact->>'Province/State' as Province_State,contact->>'Zip' as Zip from alibaba_company where status = 'detail' and contact->>'person' <> '' ;
+select sid, name, url, contact->>'person' as Person,contact->>'Department' as Department,contact->>'Job Title' as Job_Title,contact->>'Telephone' as Telephone,contact->>'Mobile Phone' as Mobile_Phone,contact->>'Fax' as Fax,contact->>'Address' as Address,contact->>'Country/Region' as Country_Region,contact->>'Province/State' as Province_State, contact->>'City' as City,contact->>'Province/State' as Province_State,contact->>'Zip' as Zip from alibaba_company where status = 'detail' and contact->>'person' <> '' order by name;
 ```
 
+#### remove last export csv in database
+1. read csv save to redis
+```bash
+node loadLastCSV <file_path>
+```
+2. delete the same name in the db
+```bash
+node removeLastData
+```
 
 
 ### Can't Request Some Company Url
